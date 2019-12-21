@@ -33,13 +33,17 @@ def login():
             session['wid'] = user['workerID']
             response['status'] = 1
             response['data'] = user
-            response['msg'] = 'success'
+            response['msg'] = '登陆成功'
         else:
             response['msg'] = f'账号密码错误'
         return response
     except Exception as e:
         response['msg'] = f'error: {e}'
+        db.session.rollback()
         return response
+    finally:
+        db.session.close()
+
 
 
 @app.route('/api/v1/getUserInfo', methods=['GET'])
@@ -62,7 +66,10 @@ def get_user_info():
         return response
     except Exception as e:
         response['msg'] = f'error: {e}'
+        db.session.rollback()
         return response
+    finally:
+        db.session.close()
 
 
 @app.route('/api/v1/countResult', methods=['GET'])
@@ -118,7 +125,10 @@ def count_result():
         return response
     except Exception as e:
         response['msg'] = f'error: {e}'
+        db.session.rollback()
         return response
+    finally:
+        db.session.close()
 
 
 @app.route('/api/v1/getUnselectList', methods=['GET'])
@@ -157,7 +167,10 @@ def get_unselect_list():
             return response
     except Exception as e:
         response['msg'] = f'error: {e}'
+        db.session.rollback()
         return response
+    finally:
+        db.session.close()
 
 
 @app.route('/api/v1/chooseCake', methods=['post'])
@@ -172,12 +185,12 @@ def choose_cake():
         if session:
             if (time.time() - 1577250000) > 0:
                 response['status'] = -4
-                response['msg'] = f'error: 超过选择时间，不能选择'
+                response['msg'] = f'error: 超过选择时间，不能选择，感谢参与。'
                 return response
             if not db.session.query(
                     exists().where(and_(Worker.worker_id == session.get('wid', ''), Worker.status == 0))).scalar():
                 response['status'] = -3
-                response['msg'] = f'error: 已经选择，不能修改'
+                response['msg'] = f'error: 已经选择，不能再次修改。'
                 return response
             if cake_id != 0:
                 Worker.query.filter_by(worker_id=session.get('wid', '')).update({
@@ -187,7 +200,7 @@ def choose_cake():
                 })
                 db.session.commit()
                 response['status'] = 1
-                response['msg'] = 'success'
+                response['msg'] = '提交成功，感谢您的参与，即将为您退出。'
                 return response
         else:
             response['status'] = -2
@@ -195,7 +208,10 @@ def choose_cake():
             return response
     except Exception as e:
         response['msg'] = f'error: {e}'
+        db.session.rollback()
         return response
+    finally:
+        db.session.close()
 
 
 if __name__ == '__main__':
